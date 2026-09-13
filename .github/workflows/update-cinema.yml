@@ -1,0 +1,65 @@
+name: Aggiorna cinema Italia
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 5 * * 1"
+
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+
+concurrency:
+  group: cinema-pages
+  cancel-in-progress: true
+
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Recupera film TMDB
+        env:
+          TMDB_READ_TOKEN: ${{ secrets.TMDB_READ_TOKEN }}
+        run: python scripts/fetch_movies.py
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepara sito
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+
+  deploy:
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+
+      - name: Pubblica
+        id: deployment
+        uses: actions/deploy-pages@v4
