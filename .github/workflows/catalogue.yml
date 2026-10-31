@@ -2,7 +2,8 @@ name: Aggiorna catalogo film
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '0 6 * * *'
+      timezone: 'Europe/Rome'
 permissions:
   contents: write
 concurrency:
