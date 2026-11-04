@@ -6,6 +6,8 @@ on:
       timezone: 'Europe/Rome'
 permissions:
   contents: write
+  pages: write
+  id-token: write
 concurrency:
   group: cinema-catalogue
   cancel-in-progress: false
@@ -22,10 +24,39 @@ jobs:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: python update_catalogue.py
-      - name: Pubblica JSON
+      - name: Verifica catalogo
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("cinema-it.json",encoding="utf-8"))
+          assert d["region"]=="IT" and d["count"]==len(d["movies"])>0, "catalogo vuoto o incompleto"
+          assert all(d["windowStart"]<=m["releaseDate"]<=d["windowEnd"] for m in d["movies"]), "date fuori finestra"
+          print("Finestra:",d["windowStart"],"->",d["windowEnd"],"· film:",d["count"])
+          PY
+      - name: Salva JSON nel repository
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add cinema-it.json
           git diff --cached --quiet || git commit -m "Aggiorna catalogo: film in sala e uscite dei prossimi 5 mesi"
           git push
+      # Il sito Pages è l'indirizzo che legge Cineclub: lordassi.github.io/moneyduck-cinema/cinema-it.json
+      - name: Prepara il sito
+        run: |
+          mkdir -p public
+          cp cinema-it.json public/cinema-it.json
+          touch public/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Pubblica su GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
