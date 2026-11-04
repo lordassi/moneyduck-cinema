@@ -27,5 +27,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add cinema-it.json
-          git diff --cached --quiet || git commit -m "Aggiorna catalogo 6 mesi precedenti e 2 futuri"
+          git diff --cached --quiet || git commit -m "Aggiorna catalogo: film in sala e uscite dei prossimi 5 mesi"
           git push
